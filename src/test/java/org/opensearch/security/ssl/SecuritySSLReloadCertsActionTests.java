@@ -248,7 +248,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
     public void testReloadHttpCertDifferentTrustChain_defaultSettingValidationFail() throws Exception {
         updateFiles(defaultCertFilePath, pemCertFilePath);
         updateFiles(defaultKeyFilePath, pemKeyFilePath);
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, null, true);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, null, null);
 
         RestHelper rh = getRestHelperAdminUser();
         // Change http certs to one signed by a different CA than the previous one
@@ -319,7 +319,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
     public void testReloadTransportCertDifferentTrustChain_defaultSettingValidationFail() throws Exception {
         updateFiles(defaultCertFilePath, pemCertFilePath);
         updateFiles(defaultKeyFilePath, pemKeyFilePath);
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, null);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, null, null);
 
         RestHelper rh = getRestHelperAdminUser();
         // Change transport certs to one signed by a different CA than the previous one

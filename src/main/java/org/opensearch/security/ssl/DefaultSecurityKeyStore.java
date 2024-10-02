@@ -156,7 +156,7 @@ public class DefaultSecurityKeyStore implements SecurityKeyStore {
         );
         httpSSLEnforceCertReloadDnVerification = settings.getAsBoolean(
             SSLConfigConstants.SECURITY_SSL_HTTP_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
-            SSLConfigConstants.SECURITY_SSL_HTTP_ENFORCE_CERT_RELOAD_DN_VERIFICATION_DEFAULT
+            true
         );
         transportSSLEnabled = settings.getAsBoolean(
             SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENABLED,
@@ -164,7 +164,7 @@ public class DefaultSecurityKeyStore implements SecurityKeyStore {
         );
         transportSSLEnforceCertReloadDnVerification = settings.getAsBoolean(
             SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
-            SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENFORCE_CERT_RELOAD_DN_VERIFICATION_DEFAULT
+            true
         );
         final boolean useOpenSSLForHttpIfAvailable = OpenSearchSecuritySSLPlugin.OPENSSL_SUPPORTED
             && settings.getAsBoolean(SSLConfigConstants.SECURITY_SSL_HTTP_ENABLE_OPENSSL_IF_AVAILABLE, true);

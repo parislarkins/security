@@ -645,7 +645,7 @@ public class OpenSearchSecuritySSLPlugin extends Plugin implements SystemIndexPl
         settings.add(
             Setting.boolSetting(
                 SSLConfigConstants.SECURITY_SSL_HTTP_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
-                SSLConfigConstants.SECURITY_SSL_HTTP_ENFORCE_CERT_RELOAD_DN_VERIFICATION_DEFAULT,
+                true,
                 Property.NodeScope,
                 Property.Filtered
             )
@@ -653,7 +653,7 @@ public class OpenSearchSecuritySSLPlugin extends Plugin implements SystemIndexPl
         settings.add(
             Setting.boolSetting(
                 SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
-                SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENFORCE_CERT_RELOAD_DN_VERIFICATION_DEFAULT,
+                true,
                 Property.NodeScope,
                 Property.Filtered
             )
