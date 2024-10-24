@@ -47,7 +47,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
     @Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 
-    private final List<Map<String, String>> NODE_CERT_DETAILS = ImmutableList.of(
+    private final List<Map<String, String>> INITIAL_NODE_CERT_DETAILS = ImmutableList.of(
             ImmutableMap.of(
                     "issuer_dn", "CN=Example Com Inc. Signing CA,OU=Example Com Inc. Signing CA,O=Example Com Inc.,DC=example,DC=com",
                     "subject_dn", "CN=node-1.example.com,OU=SSL,O=Test,L=Test,C=DE",
@@ -66,6 +66,21 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
             )
     );
 
+    private final List<Map<String, String>> NEW_CA_NODE_CERT_DETAILS = ImmutableList.of(
+            ImmutableMap.of(
+                    "issuer_dn",
+                    "CN=Example Com Inc. Secondary Signing CA,OU=Example Com Inc. Secondary Signing CA,O=Example Com Inc.,DC=example,DC=com",
+                    "subject_dn",
+                    "CN=node-1.example.com,OU=SSL,O=Test,L=Test,C=DE",
+                    "san",
+                    "[[8, 1.2.3.4.5.5], [2, node-1.example.com], [2, localhost], [7, 127.0.0.1]]",
+                    "not_before",
+                    "2024-09-17T00:15:48Z",
+                    "not_after",
+                    "2034-09-15T00:15:48Z"
+            )
+    );
+
     @Test
     public void testReloadTransportSSLCertsPass() throws Exception {
         final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
@@ -73,7 +88,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
 
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
 
         RestHelper rh = restHelper();
         rh.enableHTTPClientSSL = true;
@@ -84,8 +99,8 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         String certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
 
         ObjectNode expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
-        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
-        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
+        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
+        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
         Assert.assertEquals(expectedJsonResponse, DefaultObjectMapper.readTree(certDetailsResponse));
 
         // Test Valid Case: Change transport file details to "ssl/pem/node-new.crt.pem" and "ssl/pem/node-new.key.pem"
@@ -100,7 +115,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
 
         certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
         expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
-        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
+        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
         expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(NEW_NODE_CERT_DETAILS));
         Assert.assertEquals(expectedJsonResponse.toString(), certDetailsResponse);
     }
@@ -112,7 +127,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
 
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
 
         RestHelper rh = restHelper();
         rh.enableHTTPClientSSL = true;
@@ -123,8 +138,8 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         String certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
 
         ObjectNode expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
-        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
-        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
+        expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
+        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
         Assert.assertEquals(expectedJsonResponse, DefaultObjectMapper.readTree(certDetailsResponse));
 
         // Test Valid Case: Change rest file details to "ssl/pem/node-new.crt.pem" and "ssl/pem/node-new.key.pem"
@@ -140,7 +155,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
         expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
         expectedJsonResponse.set("http_certificates_list", buildCertsInfoNode(NEW_NODE_CERT_DETAILS));
-        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(NODE_CERT_DETAILS));
+        expectedJsonResponse.set("transport_certificates_list", buildCertsInfoNode(INITIAL_NODE_CERT_DETAILS));
         Assert.assertEquals(expectedJsonResponse.toString(), certDetailsResponse);
     }
 
@@ -152,7 +167,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
 
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
 
         RestHelper rh = restHelper();
         rh.enableHTTPClientSSL = true;
@@ -168,6 +183,177 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         Assert.assertEquals(expectedResponseString, reloadCertsResponse.getBody());
     }
 
+    @Test
+    public void testReloadHttpCertDifferentTrustChain_skipDnValidationPass() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, false, true);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change http certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_HTTP_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(200, reloadCertsResponse.getStatusCode());
+        final ObjectNode expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+            expectedJsonResponse.put("message", "updated http certs");
+        Assert.assertEquals(expectedJsonResponse.toString(), reloadCertsResponse.getBody());
+
+        String certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
+        Assert.assertEquals(
+                getCertDetailsExpectedResponse(NEW_CA_NODE_CERT_DETAILS, INITIAL_NODE_CERT_DETAILS),
+                DefaultObjectMapper.readTree(certDetailsResponse)
+        );
+    }
+
+    @Test
+    public void testReloadHttpCertDifferentTrustChain_noSkipDnValidationFail() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change http certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_HTTP_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(500, reloadCertsResponse.getStatusCode());
+        ObjectNode expectedResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        expectedResponse.put("error", "OpenSearchSecurityException[Error while initializing http SSL layer from PEM: java.lang.Exception: "
+                + "New Certs do not have valid Issuer DN, Subject DN or SAN.]; nested: Exception[New Certs do not have valid Issuer DN, Subject DN or SAN.];");
+        Assert.assertEquals(expectedResponse.toString(), reloadCertsResponse.getBody());
+    }
+
+    @Test
+    public void testReloadHttpCertDifferentTrustChain_defaultSettingValidationFail() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, null, true);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change http certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_HTTP_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(500, reloadCertsResponse.getStatusCode());
+        ObjectNode expectedResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        expectedResponse.put("error", "OpenSearchSecurityException[Error while initializing http SSL layer from PEM: java.lang.Exception: "
+                + "New Certs do not have valid Issuer DN, Subject DN or SAN.]; nested: Exception[New Certs do not have valid Issuer DN, Subject DN or SAN.];");
+        Assert.assertEquals(expectedResponse.toString(), reloadCertsResponse.getBody());
+    }
+
+    @Test
+    public void testReloadTransportCertDifferentTrustChain_skipDnValidationPass() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, false);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change transport certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_TRANSPORT_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(200, reloadCertsResponse.getStatusCode());
+        final ObjectNode expectedJsonResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        expectedJsonResponse.put("message", "updated transport certs");
+        Assert.assertEquals(expectedJsonResponse.toString(), reloadCertsResponse.getBody());
+
+        String certDetailsResponse = rh.executeSimpleRequest(GET_CERT_DETAILS_ENDPOINT);
+        Assert.assertEquals(
+                getCertDetailsExpectedResponse(INITIAL_NODE_CERT_DETAILS, NEW_CA_NODE_CERT_DETAILS),
+                DefaultObjectMapper.readTree(certDetailsResponse)
+        );
+    }
+
+    @Test
+    public void testReloadTransportCertDifferentTrustChain_noSkipDnValidationFail() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change transport certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_TRANSPORT_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(500, reloadCertsResponse.getStatusCode());
+        ObjectNode expectedResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        expectedResponse.put("error", "OpenSearchSecurityException[Error while initializing transport SSL layer from PEM: java.lang.Exception: "
+                + "New Certs do not have valid Issuer DN, Subject DN or SAN.]; nested: Exception[New Certs do not have valid Issuer DN, Subject DN or SAN.];");
+        Assert.assertEquals(expectedResponse.toString(), reloadCertsResponse.getBody());
+    }
+
+    @Test
+    public void testReloadTransportCertDifferentTrustChain_defaultSettingValidationFail() throws Exception {
+        final String pemCertFilePath = testFolder.newFile("node-temp-cert.pem").getAbsolutePath();
+        final String pemKeyFilePath = testFolder.newFile("node-temp-key.pem").getAbsolutePath();
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, null, true);
+
+        RestHelper rh = restHelper();
+        rh.enableHTTPClientSSL = true;
+        rh.trustHTTPServerCertificate = true;
+        rh.sendAdminCertificate = true;
+        rh.keystore = "ssl/reload/kirk-keystore.jks";
+
+        // Change transport certs to one signed by a different CA than the previous one
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.crt.pem").toString(), pemCertFilePath);
+        FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node-new-ca.key.pem").toString(), pemKeyFilePath);
+
+        RestHelper.HttpResponse reloadCertsResponse = rh.executePutRequest(RELOAD_TRANSPORT_CERTS_ENDPOINT, null);
+
+        Assert.assertEquals(500, reloadCertsResponse.getStatusCode());
+        ObjectNode expectedResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        expectedResponse.put("error", "OpenSearchSecurityException[Error while initializing transport SSL layer from PEM: java.lang.Exception: "
+                + "New Certs do not have valid Issuer DN, Subject DN or SAN.]; nested: Exception[New Certs do not have valid Issuer DN, Subject DN or SAN.];");
+        Assert.assertEquals(expectedResponse.toString(), reloadCertsResponse.getBody());
+    }
 
     @Test
     public void testSSLReloadFail_UnAuthorizedUser() throws Exception {
@@ -176,7 +362,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), transportPemCertFilePath);
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), transportPemKeyFilePath);
 
-        initTestCluster(transportPemCertFilePath, transportPemKeyFilePath, transportPemCertFilePath, transportPemKeyFilePath, true);
+        initTestCluster(transportPemCertFilePath, transportPemKeyFilePath, transportPemCertFilePath, transportPemKeyFilePath, true, true, true);
 
         // Test endpoint for non-admin user
         RestHelper rh = restHelper();
@@ -198,7 +384,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.crt.pem").toString(), pemCertFilePath);
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), pemKeyFilePath);
 
-        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true);
+        initTestCluster(pemCertFilePath, pemKeyFilePath, pemCertFilePath, pemKeyFilePath, true, true, true);
 
         // Test Invalid Case: Change transport file details to "ssl/pem/node-wrong.crt.pem"
         RestHelper rh = restHelper();
@@ -238,7 +424,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         FileHelper.copyFileContents(FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/node.key.pem").toString(), transportPemKeyFilePath);
 
         // This is when SSLCertReload property is set to false
-        initTestCluster(transportPemCertFilePath, transportPemKeyFilePath, transportPemCertFilePath, transportPemKeyFilePath, false);
+        initTestCluster(transportPemCertFilePath, transportPemKeyFilePath, transportPemCertFilePath, transportPemKeyFilePath, false, true, true);
 
         RestHelper rh = restHelper();
         rh.enableHTTPClientSSL = true;
@@ -262,9 +448,11 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
      * @param httpPemCertFilePath Absolute Path to transport pem cert file
      * @param httpPemKeyFilePath Absolute Path to transport pem key file
      * @param sslCertReload Sets the ssl cert reload flag
+     * @param httpEnforceReloadDnVerification Sets the http enforce reload dn verification flag if non-null
+     * @param transportEnforceReloadDnVerification Sets the transport enforce reload dn verification flag if non-null
      */
-    private void initTestCluster(final String transportPemCertFilePath, final String transportPemKeyFilePath, final String httpPemCertFilePath, final String httpPemKeyFilePath, final boolean sslCertReload) throws Exception {
-        final Settings settings = Settings.builder()
+    private void initTestCluster(final String transportPemCertFilePath, final String transportPemKeyFilePath, final String httpPemCertFilePath, final String httpPemKeyFilePath, final boolean sslCertReload, final Boolean httpEnforceReloadDnVerification, final Boolean transportEnforceReloadDnVerification) throws Exception {
+        final Settings.Builder settingsBuilder = Settings.builder()
                 .putList(ConfigConstants.SECURITY_AUTHCZ_ADMIN_DN, "CN=kirk,OU=client,O=client,L=Test,C=DE")
                 .putList(ConfigConstants.SECURITY_NODES_DN, "CN=node-1.example.com,OU=SSL,O=Test,L=Test,C=DE")
                 .put(SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENABLED, true)
@@ -277,8 +465,17 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
                 .put(SSLConfigConstants.SECURITY_SSL_HTTP_PEMCERT_FILEPATH, httpPemCertFilePath) // "ssl/reload/node.crt.pem"
                 .put(SSLConfigConstants.SECURITY_SSL_HTTP_PEMKEY_FILEPATH, httpPemKeyFilePath) // "ssl/reload/node.key.pem"
                 .put(SSLConfigConstants.SECURITY_SSL_HTTP_PEMTRUSTEDCAS_FILEPATH, FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/root-ca.pem"))
-                .put(ConfigConstants.SECURITY_SSL_CERT_RELOAD_ENABLED, sslCertReload)
-                .build();
+                .put(ConfigConstants.SECURITY_SSL_CERT_RELOAD_ENABLED, sslCertReload);
+
+        if (httpEnforceReloadDnVerification != null) settingsBuilder.put(
+                SSLConfigConstants.SECURITY_SSL_HTTP_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
+                httpEnforceReloadDnVerification
+        );
+
+        if (transportEnforceReloadDnVerification != null) settingsBuilder.put(
+                SSLConfigConstants.SECURITY_SSL_TRANSPORT_ENFORCE_CERT_RELOAD_DN_VERIFICATION,
+                transportEnforceReloadDnVerification
+        );
 
         final Settings initTransportClientSettings = Settings.builder()
                 .put(SSLConfigConstants.SECURITY_SSL_TRANSPORT_TRUSTSTORE_FILEPATH,
@@ -288,7 +485,7 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
                         FileHelper.getAbsoluteFilePathFromClassPath("ssl/reload/kirk-keystore.jks"))
                 .build();
 
-        setup(initTransportClientSettings, new DynamicSecurityConfig(), settings, true, ClusterConfiguration.DEFAULT);
+        setup(initTransportClientSettings, new DynamicSecurityConfig(), settingsBuilder.build(), true, ClusterConfiguration.DEFAULT);
     }
 
     public static JsonNode buildCertsInfoNode(final List<Map<String, String>> certsInfo) {
@@ -301,4 +498,13 @@ public class SecuritySSLReloadCertsActionTests extends SingleClusterTest {
         return nodeCertDetailsArray;
     }
 
+    private JsonNode getCertDetailsExpectedResponse(
+            List<Map<String, String>> httpCertDetails,
+            List<Map<String, String>> transportCertDetails
+    ) {
+        final ObjectNode updatedCertDetailsResponse = DefaultObjectMapper.objectMapper.createObjectNode();
+        updatedCertDetailsResponse.set("http_certificates_list", buildCertsInfoNode(httpCertDetails));
+        updatedCertDetailsResponse.set("transport_certificates_list", buildCertsInfoNode(transportCertDetails));
+        return updatedCertDetailsResponse;
+    }
 }
