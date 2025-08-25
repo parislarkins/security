@@ -13,7 +13,12 @@ package org.opensearch.security.auditlog.impl;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
@@ -30,6 +35,7 @@ import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpRequest;
 import org.opensearch.rest.RestRequest;
+import org.opensearch.security.DefaultObjectMapper;
 import org.opensearch.security.auditlog.AuditLog;
 import org.opensearch.security.auditlog.config.AuditConfig;
 import org.opensearch.security.filter.SecurityRequest;
@@ -40,8 +46,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class AuditMessageTest {
 
@@ -214,57 +220,38 @@ public class AuditMessageTest {
         return auditMessage;
     }
 
-    @Test
-    public void testResolvedIndicesSplit() {
-        final String[] indices = {"testing", "index*"};
-        final String[] resolvedIndices = {"testing", "index2", "index3", "index4", "index5", "index6", "index7", "index8"};
-        message.addIndices(indices);
-        message.addResolvedIndices(resolvedIndices);
-
-        int numberOfIndices = indices.length + resolvedIndices.length;
-//        int numberOfIndices = resolvedIndices.length;
-
-        System.out.println("Standard message:");
-        System.out.println(message.toJson());
-
-        final int maximumIndicesPerMessage = 8;
-        final List<String> jsonSplitIndices = message.toJsonSplitIndices(maximumIndicesPerMessage);
-
-        System.out.println("Split messages:");
-        jsonSplitIndices.forEach(System.out::println);
-
-        assertThat(jsonSplitIndices.size(), is(Math.ceilDiv(numberOfIndices, maximumIndicesPerMessage)));
-    }
-
-    private String[] getTestIndices(final String prefix, final int numberOfIndices) {
+    private String[] getTestIndices(final int indexNameLength, final int numberOfIndices) {
         ArrayList<String> indices = new ArrayList<>();
         for (int i = 0; i < numberOfIndices; i++) {
-            indices.add(prefix + i);
+            indices.add("a".repeat(indexNameLength));
         }
         return indices.toArray(new String[0]);
     }
 
     @Test
-    public void testResolvedIndicesSplitCharacters() {
-        final String[] indices = {"testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting", "index*"};
-//        final String[] resolvedIndices = getTestIndices("4961d135-ab33-4195-a638-77f3401cca95_pod_pegaonde_work_pegacloudsystemrequest_notification_dddd_20250117150039@p", 11325);
-//        final String[] resolvedIndices = getTestIndices("testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting", 11325);
-        final String[] resolvedIndices = {"testing"};
-        message.addIndices(indices);
-        message.addResolvedIndices(resolvedIndices);
+    public void testToJsonSplitIndices() {
+        // test standard case, should be split into 4 messages
+        AuditMessage auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3));
+        List<String> splitMessages = auditMessage.toJsonSplitIndices(255);
+        assertThat(splitMessages.size(), is(4));
 
-//        int numberOfIndices = indices.length + resolvedIndices.length;
-//        int numberOfIndices = resolvedIndices.length;
+        // test when audit_trace_indices is not present, should be split into 3 messages
+        auditMessage = dummyAuditMessage(null, getTestIndices(255, 3));
+        splitMessages = auditMessage.toJsonSplitIndices(255);
+        assertThat(splitMessages.size(), is(3));
 
-        System.out.println("Standard message:");
-        System.out.println(message.toJson());
+        // test when splitting isn't required, should return a single message
+        auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 2));
+        splitMessages = auditMessage.toJsonSplitIndices(700);
+        assertThat(splitMessages.size(), is(1));
 
-        final int maximumIndexCharsPerMessage = 255;
-        final List<String> jsonSplitIndices = message.toJsonSplitIndices(maximumIndexCharsPerMessage);
+        // test when there aren't enough indices to fill a whole message so some resolved indices are added too.
+        // Should be split into 2 messages. First with "*" and one resolved index, second with the remaining resolved indices
+        auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3));
+        splitMessages = auditMessage.toJsonSplitIndices(700);
+        assertThat(splitMessages.size(), is(2));
 
-        System.out.printf("Split message into %s messages:%n", jsonSplitIndices.size());
-        jsonSplitIndices.forEach(System.out::println);
-
-//        assertThat(jsonSplitIndices.size(), is(Math.ceilDiv(numberOfIndices, maximumIndexCharsPerMessage)));
+        // test maximum < 255 throws an error
+        assertThrows(IllegalArgumentException.class, () -> dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3)).toJsonSplitIndices(250));
     }
 }
