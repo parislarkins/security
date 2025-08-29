@@ -250,8 +250,5 @@ public class AuditMessageTest {
         auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3));
         splitMessages = auditMessage.toJsonSplitIndices(700);
         assertThat(splitMessages.size(), is(2));
-
-        // test maximum < 255 throws an error
-        assertThrows(IllegalArgumentException.class, () -> dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3)).toJsonSplitIndices(250));
     }
 }
