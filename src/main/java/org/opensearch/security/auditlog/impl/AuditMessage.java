@@ -506,11 +506,6 @@ public final class AuditMessage {
     }
 
     public List<String> toJsonSplitIndices(final int maximumIndexCharsPerMessage) {
-        // Maximum index name length is 255, so we must be able to log at least 1
-        if (maximumIndexCharsPerMessage < 255) {
-            throw new IllegalArgumentException("maximumIndexCharsPerMessage must be greater than or equal to 255");
-        }
-
         final List<String> indices = Arrays.asList((String[]) auditInfo.getOrDefault(INDICES, new String[0]));
         final List<String> resolvedIndices = Arrays.asList((String[]) auditInfo.getOrDefault(RESOLVED_INDICES, new String[0]));
 
