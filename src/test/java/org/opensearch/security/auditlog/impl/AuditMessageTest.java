@@ -13,12 +13,7 @@ package org.opensearch.security.auditlog.impl;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
@@ -35,7 +30,6 @@ import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpRequest;
 import org.opensearch.rest.RestRequest;
-import org.opensearch.security.DefaultObjectMapper;
 import org.opensearch.security.auditlog.AuditLog;
 import org.opensearch.security.auditlog.config.AuditConfig;
 import org.opensearch.security.filter.SecurityRequest;
@@ -43,10 +37,8 @@ import org.opensearch.security.filter.SecurityRequestFactory;
 import org.opensearch.security.securityconf.impl.CType;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class AuditMessageTest {
@@ -209,7 +201,12 @@ public class AuditMessageTest {
     }
 
     private AuditMessage dummyAuditMessage(final String[] indices, String[] resolvedIndices) {
-        final AuditMessage auditMessage = new AuditMessage(AuditCategory.AUTHENTICATED, clusterServiceMock, AuditLog.Origin.REST, AuditLog.Origin.REST);
+        final AuditMessage auditMessage = new AuditMessage(
+            AuditCategory.AUTHENTICATED,
+            clusterServiceMock,
+            AuditLog.Origin.REST,
+            AuditLog.Origin.REST
+        );
 
         if (indices != null) {
             auditMessage.addIndices(indices);
@@ -231,7 +228,7 @@ public class AuditMessageTest {
     @Test
     public void testToJsonSplitIndices() {
         // test standard case, should be split into 4 messages
-        AuditMessage auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3));
+        AuditMessage auditMessage = dummyAuditMessage(new String[] { "*" }, getTestIndices(255, 3));
         List<String> splitMessages = auditMessage.toJsonSplitIndices(255);
         assertThat(splitMessages.size(), is(4));
 
@@ -241,13 +238,13 @@ public class AuditMessageTest {
         assertThat(splitMessages.size(), is(3));
 
         // test when splitting isn't required, should return a single message
-        auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 2));
+        auditMessage = dummyAuditMessage(new String[] { "*" }, getTestIndices(255, 2));
         splitMessages = auditMessage.toJsonSplitIndices(700);
         assertThat(splitMessages.size(), is(1));
 
         // test when there aren't enough indices to fill a whole message so some resolved indices are added too.
         // Should be split into 2 messages. First with "*" and one resolved index, second with the remaining resolved indices
-        auditMessage = dummyAuditMessage(new String[]{"*"}, getTestIndices(255, 3));
+        auditMessage = dummyAuditMessage(new String[] { "*" }, getTestIndices(255, 3));
         splitMessages = auditMessage.toJsonSplitIndices(700);
         assertThat(splitMessages.size(), is(2));
     }

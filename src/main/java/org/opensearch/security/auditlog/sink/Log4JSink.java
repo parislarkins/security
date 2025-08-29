@@ -31,7 +31,10 @@ public final class Log4JSink extends AuditLogSink {
         loggerName = settings.get(settingsPrefix + ".log4j.logger_name", "audit");
         auditLogger = LogManager.getLogger(loggerName);
         logLevel = Level.toLevel(settings.get(settingsPrefix + ".log4j.level", "INFO").toUpperCase());
-        maximumIndexCharactersPerMessage = settings.getAsInt(settingsPrefix + ".log4j.maximum_index_characters_per_message", Integer.MAX_VALUE);
+        maximumIndexCharactersPerMessage = settings.getAsInt(
+            settingsPrefix + ".log4j.maximum_index_characters_per_message",
+            Integer.MAX_VALUE
+        );
         enabled = auditLogger.isEnabled(logLevel);
     }
 
