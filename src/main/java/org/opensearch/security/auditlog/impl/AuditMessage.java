@@ -541,13 +541,14 @@ public final class AuditMessage {
             if (indicesRemaining > 0) {
                 // Grab the next sublist of up to maximumIndicesPerMessage length
                 final int fromIndex = indices.size() - indicesRemaining;
-                indicesPartition = indices.subList(fromIndex,
-                        Math.min(indices.size(), fromIndex + maximumIndicesPerMessage));
+                indicesPartition = indices.subList(fromIndex, Math.min(indices.size(), fromIndex + maximumIndicesPerMessage));
 
                 // If there weren't enough indices to reach the maximum, add resolved indices up to the maximum
                 if (indicesPartition.size() < maximumIndicesPerMessage) {
-                    resolvedIndicesPartition = resolvedIndices.subList(resolvedIndices.size() - resolvedIndicesRemaining,
-                            Math.min(resolvedIndices.size(), maximumIndicesPerMessage - indicesPartition.size()));
+                    resolvedIndicesPartition = resolvedIndices.subList(
+                        resolvedIndices.size() - resolvedIndicesRemaining,
+                        Math.min(resolvedIndices.size(), maximumIndicesPerMessage - indicesPartition.size())
+                    );
                 } else { // Otherwise, don't include any resolvedIndices in this split message
                     resolvedIndicesPartition = Collections.emptyList();
                 }
@@ -556,8 +557,10 @@ public final class AuditMessage {
 
                 // Grab the next sublist of up to maximumIndicesPerMessage length
                 final int fromIndex = resolvedIndices.size() - resolvedIndicesRemaining;
-                resolvedIndicesPartition = resolvedIndices.subList(fromIndex,
-                        Math.min(resolvedIndices.size(), fromIndex + maximumIndicesPerMessage));
+                resolvedIndicesPartition = resolvedIndices.subList(
+                    fromIndex,
+                    Math.min(resolvedIndices.size(), fromIndex + maximumIndicesPerMessage)
+                );
             }
 
             indicesRemaining -= indicesPartition.size();
